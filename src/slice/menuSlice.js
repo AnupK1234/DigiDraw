@@ -7,7 +7,7 @@ const initialState = {
 }
 
 export const menuSlice = createSlice({
-    name: 'name',
+    name: 'menu',
     initialState,
     reducers: {
         menuItemClick: (state, action) => {

@@ -14,11 +14,11 @@ import { MENU_ITEMS } from "../../constants";
 import cx from "classnames";
 
 const Menu = () => {
-  const dispath = useDispatch();
+  const dispatch = useDispatch();
   const activeMenuItem = useSelector((state) => state.menu.activeMenuItem);
 
   const handleMenuClick = (itemName) => {
-    dispath(menuItemClick(itemName));
+    dispatch(menuItemClick(itemName));
   };
 
   return (
