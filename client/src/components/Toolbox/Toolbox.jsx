@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { COLORS, MENU_ITEMS } from "../../constants";
 import styles from "./toolbox.module.css";
@@ -23,6 +23,13 @@ const Toolbox = () => {
     dispatch(changeColor({ item: activeMenuItem, color: newColor }));
     socket.emit("changeConfig", { color: newColor, size });
   };
+
+  useEffect(() => {
+    if (activeMenuItem === MENU_ITEMS.ERASER) {
+      updateColor(COLORS.WHITE);
+    }
+    else updateColor(COLORS.BLACK);
+  }, [activeMenuItem]);
 
   return (
     <div className={styles.toolboxContainer}>
