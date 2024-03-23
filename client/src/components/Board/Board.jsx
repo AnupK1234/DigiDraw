@@ -30,7 +30,10 @@ const Board = () => {
       const pdf = new jsPDF();
       pdf.addImage(URL, "PNG", 0, 0);
       pdf.save(`sketch.pdf`);
-    } else if (actionMenuItem === MENU_ITEMS.UNDO || actionMenuItem === MENU_ITEMS.REDO) {
+    } else if (
+      actionMenuItem === MENU_ITEMS.UNDO ||
+      actionMenuItem === MENU_ITEMS.REDO
+    ) {
       if (historyPointer.current > 0 && actionMenuItem == MENU_ITEMS.UNDO)
         historyPointer.current -= 1;
       if (
@@ -55,7 +58,18 @@ const Board = () => {
       context.lineWidth = size;
     };
 
+    const handleChangeConfig = (config) => {
+      console.log("config", config);
+      changeConfig(config.color, config.size);
+    };
+
     changeConfig(color, size);
+    socket.on('changeConfig', handleChangeConfig)
+
+    return () => {
+      socket.off('changeConfig', handleChangeConfig);
+    }
+
   }, [color, size]);
 
   // useLayoutEffect run before browser repaints
@@ -79,12 +93,14 @@ const Board = () => {
 
     const handleMouseDown = (e) => {
       shouldDraw.current = true;
-      beginPath(e.clientX, e.clientY);
+      beginPath(e.clientX || e.touches[0].clientX, e.clientY || e.touches[0].clientY);
+      socket.emit('beginPath', { x: e.clientX || e.touches[0].clientX, y: e.clientY || e.touches[0].clientY });
     };
-
+    
     const handleMouseMove = (e) => {
       if (!shouldDraw.current) return;
-      drawLine(e.clientX, e.clientY);
+      drawLine(e.clientX || e.touches[0].clientX, e.clientY || e.touches[0].clientY);
+      socket.emit('drawLine', { x: e.clientX || e.touches[0].clientX, y: e.clientY || e.touches[0].clientY });
     };
 
     const handleMouseUp = (e) => {
@@ -94,19 +110,38 @@ const Board = () => {
       historyPointer.current = drawHistory.current.length - 1;
     };
 
+    const handleBeginPath = (path) => {
+      beginPath(path.x, path.y);
+    }
+
+    const handleDrawLine = (path) => {
+      drawLine(path.x, path.y);
+    }
+
+    // Mouse event
     canvas.addEventListener("mousedown", handleMouseDown);
     canvas.addEventListener("mousemove", handleMouseMove);
     canvas.addEventListener("mouseup", handleMouseUp);
-
-    // Client side connected successfully
-    socket.on("connect", () => {
-      console.log("Client connected"); 
-    });
-
+    
+    // Touch events for mobile devices
+    canvas.addEventListener("touchstart", handleMouseDown);
+    canvas.addEventListener("touchmove", handleMouseMove);
+    canvas.addEventListener("touchend", handleMouseUp);
+    
+    socket.on('beginPath', handleBeginPath);
+    socket.on('drawLine', handleDrawLine);
+    
     return () => {
       canvas.removeEventListener("mousedown", handleMouseDown);
       canvas.removeEventListener("mousemove", handleMouseMove);
       canvas.removeEventListener("mouseup", handleMouseUp);
+      
+      canvas.removeEventListener("touchstart", handleMouseDown);
+      canvas.removeEventListener("touchmove", handleMouseMove);
+      canvas.removeEventListener("touchend", handleMouseUp);
+      
+      socket.off('beginPath', handleBeginPath);
+      socket.off('drawLine', handleDrawLine);
     };
   }, []);
 
